@@ -14,6 +14,27 @@ $script:PASSED = 0
 $script:FAILED = 0
 $script:TOTAL = 0
 
+function Initialize-PuppeteerBrowserPath {
+  if ($env:PUPPETEER_EXECUTABLE_PATH -and (Test-Path $env:PUPPETEER_EXECUTABLE_PATH -PathType Leaf)) {
+    return
+  }
+
+  $candidates = @(@(
+    (Get-Command chrome -ErrorAction SilentlyContinue).Source,
+    (Get-Command chrome.exe -ErrorAction SilentlyContinue).Source,
+    (Get-Command msedge -ErrorAction SilentlyContinue).Source,
+    (Get-Command msedge.exe -ErrorAction SilentlyContinue).Source,
+    "C:\Program Files\Google\Chrome\Application\chrome.exe",
+    "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    "C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+  ) | Where-Object { $_ -and (Test-Path $_ -PathType Leaf) } | Select-Object -Unique)
+
+  if ($candidates.Count -gt 0) {
+    $env:PUPPETEER_EXECUTABLE_PATH = [string]$candidates[0]
+  }
+}
+
 # Function to validate a single diagram string
 function Validate-DiagramString {
   param(
@@ -173,6 +194,8 @@ function Main {
 }
 
 # Run main function
+Initialize-PuppeteerBrowserPath
+
 # Check if we have pipeline input
 $pipedInput = $input | Out-String
 if ($pipedInput -ne "") {
